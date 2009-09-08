@@ -1,0 +1,114 @@
+#!/usr/bin/ruby
+# srgal
+# Copyright (C) Eskild Hustvedt 2009
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Command-line parsing
+require 'getoptlong'
+# Application version
+$version = 0.1
+# Verbosity level
+$verbose = 0
+
+# Purpose: Print formatted --help output
+# Usage: printHelp('-shortoption', '--longoption', 'description');
+#  Description will be reformatted to fit within a normal terminal
+def printHelp (short,long,description)
+	maxlen = 80
+	optionlen = 20
+	# Check if the short/long are LONGER than optionlen, if so, we need
+	# to do some additional magic to take up only $maxlen.
+	# The +1 here is because we always add a space between them, no matter what
+	if (short.length + long.length + 1) > optionlen
+		optionlen = short.length + long.length + 1;
+	end
+
+	generatedDesc = ''
+	currdesc = ''
+
+	description.split(/ /).each do |part|
+		if(generatedDesc.length > 0)
+			if (currdesc.length + part.length + 1 + 20) > maxlen
+				generatedDesc.concat("\n")
+				currdesc = ''
+			else
+				currdesc.concat(' ')
+				generatedDesc.concat(' ')
+			end
+		end
+		currdesc.concat(part)
+		generatedDesc.concat(part)
+	end
+	if !(generatedDesc.length > 0)
+		raise("Option mismatch")
+	end
+	generatedDesc.split(/\n/).each do |descr|
+		printf("%-4s %-15s %s\n",short,long,descr)
+		short = ''; long = ''
+	end
+end
+
+# Purpose: Check for a file in path
+def inPath(exec)
+	ENV['PATH'].split(/:/).each do |part|
+		if File.executable?(part+'/'+exec) and not File.directory?(part+'/'+exec)
+			return true
+		end
+	end
+	return false
+end
+
+# Purpose: Output a string if in verbose mode
+def vputs (str)
+	if $verbose > 0
+		puts(str)
+	end
+end
+
+# Purpose: Print the help output
+def Help ()
+	puts "srgal "+$version.to_s
+	puts ""
+	puts "Usage: srgal [OPTIONS] dir1 dir2 .."
+	puts ""
+	printHelp('-h','--help','Display this help text')
+	printHelp('-v','--verbose','Increase verbosity (supply multiple time to increase it further)')
+end
+
+opts = GetoptLong.new(
+	[ '--help', '-h', GetoptLong::NO_ARGUMENT ],
+	[ '--version',GetoptLong::NO_ARGUMENT ],
+	[ '--verbose', '-v', GetoptLong::NO_ARGUMENT ]
+)
+
+begin
+	opts.each do |opt, arg|
+		case opt
+		when '--help'
+			Help()
+			exit(0)
+		when '--verbose'
+			$verbose += 1
+		when '--version'
+			puts "srgal "+$version.to_s
+			exit(0)
+		end
+	end
+rescue
+	puts('See --help for more inforation')
+	exit(1)
+end
+
+puts('Stubbed')
