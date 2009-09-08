@@ -21,6 +21,11 @@ require 'getoptlong'
 $version = 0.1
 # Verbosity level
 $verbose = 0
+# titles
+$title = ''
+$subtitle = ''
+# Images per line
+$imagesPerLine = 5
 
 # Purpose: Print formatted --help output
 # Usage: printHelp('-shortoption', '--longoption', 'description');
@@ -60,6 +65,36 @@ def printHelp (short,long,description)
 	end
 end
 
+# Purpose: Read a simple key=value config file, return the results
+def loadConfig (file)
+	conf = File.new(file,'r')
+	settings = Hash.new
+	while (line = conf.gets)
+		line.chomp!
+		# Skip lines starting with #, [ or only containing whitespace
+		if line =~ /^\s*#/ || !line =~ /\S/ || !line =~ /^\s*\[/
+			next
+		end
+		setting = String.new(line)
+		value = String.new(line)
+		setting.sub!(/^([^=]*)\s*=.*/,'\1')
+		value.sub!(/^[^=]*\s*=\s*/,'')
+		if(value == setting)
+			next
+		end
+		settings[setting] = value
+	end
+	return settings
+end
+
+# Purpose: Write a simple key=value config file
+def writeConfig (file, settings)
+	conf = File.new(file,'w')
+	settings.each do |key, value|
+		conf.puts(key+'='+value)
+	end
+end
+
 # Purpose: Check for a file in path
 def inPath(exec)
 	ENV['PATH'].split(/:/).each do |part|
@@ -90,6 +125,8 @@ end
 opts = GetoptLong.new(
 	[ '--help', '-h', GetoptLong::NO_ARGUMENT ],
 	[ '--version',GetoptLong::NO_ARGUMENT ],
+	[ '--title','-t',GetoptLong::OPTIONAL_ARGUMENT ],
+	[ '--subtitle','-s',GetoptLong::OPTIONAL_ARGUMENT ],
 	[ '--verbose', '-v', GetoptLong::NO_ARGUMENT ]
 )
 
@@ -104,6 +141,18 @@ begin
 		when '--version'
 			puts "srgal "+$version.to_s
 			exit(0)
+		when '--title'
+			if arg
+				$title = arg
+			else
+				$title = ''
+			end
+		when '--subtitle'
+			if arg
+				$title = arg
+			else
+				$title = ''
+			end
 		end
 	end
 rescue
