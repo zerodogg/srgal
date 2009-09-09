@@ -66,7 +66,7 @@ def printHelp (short,long,description)
 end
 
 # Purpose: Read a simple key=value config file, return the results
-def loadConfig (file)
+def loadConfigFile (file)
 	conf = File.new(file,'r')
 	settings = Hash.new
 	while (line = conf.gets)
@@ -84,15 +84,45 @@ def loadConfig (file)
 		end
 		settings[setting] = value
 	end
+	conf.close
 	return settings
 end
 
 # Purpose: Write a simple key=value config file
-def writeConfig (file, settings)
+def writeConfigFile (file, settings, comments)
 	conf = File.new(file,'w')
+	if comments['HEADER']
+		conf.puts('# '+comments['HEADER'])
+	end
 	settings.each do |key, value|
+		if comments[key]
+			conf.puts '# '+comments[key]
+		end
 		conf.puts(key+'='+value)
 	end
+	conf.close
+end
+
+# Purpose: Load the srgal config file if present
+def loadSrgalConfig (dir)
+	settings = Hash.new
+	if File.exists?(dir+'/srgal.conf')
+		settings = loadConfigFile(dir+'/srgal.conf')
+	else
+		settings = Hash.new
+	end
+	return settings
+end
+
+# Purpose: Write the srgal config file
+def writeSrgalConfig (dir,settings)
+	comments = Hash.new
+	comments['HEADER'] = 'SRGal configuration file'
+	comments['subtitle'] = 'The sub-title of the gallery'
+	comments['imgperline'] = 'The number of images per line on the front page'
+	comments['title'] = 'The title of the gallery'
+	writeConfigFile(dir+'/srgal.conf',settings,comments)
+	return true
 end
 
 # Purpose: Check for a file in path
@@ -120,6 +150,42 @@ def Help ()
 	puts ""
 	printHelp('-h','--help','Display this help text')
 	printHelp('-v','--verbose','Increase verbosity (supply multiple time to increase it further)')
+end
+
+def writeFrontPageHeader (file)
+end
+
+def writeFrontPageFooter (file)
+end
+
+def createImageThumbnail (file)
+end
+
+def writeImageLargeHTML (imgNo,file)
+end
+
+def processImage (imgNo,dir,file)
+	thumbnail = createImageThumbnail(file)
+	writeImageLargeHTML(imgNo,file)
+end
+
+# Purpose: Process a directory
+def processDir (dir)
+	if not File.exists?(dir)
+		puts dir+': does not exist - skipping'
+		return
+	elsif not File.directory?(dir)
+		puts dir+': is not a directory - skipping'
+	end
+
+	imgNo = 0
+	Files.glob(dir+'/*').each do |entry|
+		if not entry =~ /(jpe?g|gif|png)$/i
+			next
+		end
+		imgNo += 1
+		processImage(imgNo,dir,entry)
+	end
 end
 
 opts = GetoptLong.new(
@@ -160,4 +226,12 @@ rescue
 	exit(1)
 end
 
-puts('Stubbed')
+if ARGV.length == 0
+	puts 'You did not supply any directory to run on'
+	puts 'See --help for more information'
+	exit(1)
+end
+
+ARGV.each do |dir|
+	processDir(dir)
+end
